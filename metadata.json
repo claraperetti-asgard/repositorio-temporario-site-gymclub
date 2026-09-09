@@ -1,0 +1,6 @@
+{
+  "name": "GymClub",
+  "description": "Conheça o GymClub: Seu elo entre bem-estar e produtividade! O benefício fitness que funciona para todo mundo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

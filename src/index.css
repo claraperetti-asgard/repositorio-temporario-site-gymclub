@@ -1,0 +1,222 @@
+@import "tailwindcss";
+
+@theme {
+  --font-title: 'Unbounded', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --color-gym-orange: #ff883f;
+  --color-gym-orange-light: #ffaa5b;
+  --color-gym-green: #c2f463;
+  --color-gym-yellow: #f7e92a;
+  --color-gym-teal: #3ad9c5;
+}
+
+:root {
+  --color-gym-orange: #ff883f;
+  --color-gym-orange-light: #ffaa5b;
+  --color-gym-green: #c2f463;
+  --color-gym-yellow: #f7e92a;
+  --color-gym-teal: #3ad9c5;
+
+  /* Altura real do header sticky. Os heros descontam esse valor de 100svh
+     para ocupar exatamente uma tela cheia em qualquer monitor. */
+  --nav-h: 81px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --nav-h: 101px;
+  }
+}
+
+/* Typography */
+.font-title, .font-unbounded {
+  font-family: 'Unbounded', sans-serif;
+}
+
+.font-sans {
+  font-family: 'Unbounded', sans-serif;
+}
+
+/* Solid Brand Colors */
+.bg-gym-orange {
+  background-color: var(--color-gym-orange);
+}
+
+.bg-gym-green {
+  background-color: var(--color-gym-green);
+}
+
+.bg-gym-yellow {
+  background-color: var(--color-gym-yellow);
+}
+
+.bg-gym-teal {
+  background-color: var(--color-gym-teal);
+}
+
+.text-gym-orange {
+  color: var(--color-gym-orange);
+}
+
+/* Gradientes Utilitários */
+.bg-gradient-orange {
+  background: linear-gradient(135deg, var(--color-gym-orange), var(--color-gym-orange-light));
+}
+
+.bg-gradient-yellow-orange {
+  background: linear-gradient(135deg, var(--color-gym-yellow), var(--color-gym-orange));
+}
+
+.bg-gradient-green {
+  background: linear-gradient(135deg, var(--color-gym-green), var(--color-gym-teal));
+}
+
+.bg-gradient-yellow {
+  background: linear-gradient(135deg, var(--color-gym-yellow), var(--color-gym-orange-light));
+}
+
+.bg-gradient-teal {
+  background: linear-gradient(135deg, var(--color-gym-teal), var(--color-gym-yellow));
+}
+
+.bg-gradient-yellow-green {
+  background: linear-gradient(135deg, var(--color-gym-yellow), var(--color-gym-green));
+}
+
+.bg-gradient-orange-yellow {
+  background: linear-gradient(135deg, var(--color-gym-orange-light), var(--color-gym-yellow));
+}
+
+/* Text Clipping */
+.text-gradient-orange {
+  background: linear-gradient(135deg, var(--color-gym-orange), var(--color-gym-orange-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-yellow-orange {
+  background: linear-gradient(135deg, var(--color-gym-yellow), var(--color-gym-orange));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-green {
+  background: linear-gradient(135deg, var(--color-gym-green), var(--color-gym-teal));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Custom scrollbar and animations */
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 60s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Floating Animations for Orbital Section */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(3deg);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(-4deg);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(16px) rotate(4deg);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+
+/* Strikethrough with red line */
+.red-line-through {
+  position: relative;
+  display: inline-block;
+}
+
+.red-line-through::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 50%;
+  height: 2.5px;
+  background-color: #ef4444;
+  transform: translateY(-50%);
+  border-radius: 1px;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Marquee Carousel Styles */
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 1rem;
+  animation: marquee-scroll var(--marquee-duration, 60s) linear infinite;
+}
+
+.marquee-pause:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
