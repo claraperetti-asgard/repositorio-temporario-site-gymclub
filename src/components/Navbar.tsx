@@ -174,7 +174,7 @@ export function Navbar({ onOpenCalculator, onNavigateToSection }: NavbarProps) {
           <img
             src={logoMark}
             alt="GymClub"
-            className="h-19 sm:h-25 w-auto object-contain"
+            className="h-15 sm:h-20 w-auto object-contain"
           />
         </button>
 
