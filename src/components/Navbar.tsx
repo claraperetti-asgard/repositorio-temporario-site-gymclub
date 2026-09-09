@@ -264,7 +264,7 @@ export function Navbar({ onOpenCalculator, onNavigateToSection }: NavbarProps) {
           {/* CTA Seja Parceiro (Preto com transição para Laranja Oficial) */}
           <button
             onClick={handlePartnerClick}
-            className="ml-2 rounded-full bg-gradient-green px-5 py-2.5 text-xs sm:text-sm font-title font-medium text-black  transition-all hover:bg-[#ff883f] hover:text-black cursor-pointer shadow-sm"
+            className="ml-2 rounded-full bg-gradient-green px-5 py-2.5 text-xs sm:text-sm font-title font-bold text-black  transition-all hover:bg-[#ff883f] hover:text-black cursor-pointer shadow-sm"
           >
             Seja parceiro
           </button>

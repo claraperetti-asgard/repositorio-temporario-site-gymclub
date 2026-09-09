@@ -30,6 +30,8 @@ import usuarioHeroPhoto from '../assets/usuario-hero.jpg';
 import appMockupPhoto from '../assets/app-mockup.jpg';
 import bgEmpresa from '../assets/bg-empresa.png';
 import fundoUsuarios from '../assets/fundo-usuarios.jpeg';
+import qrAppStore from '../assets/qrcode-appstore.png';
+import qrGooglePlay from '../assets/qrcode-googleplay.png';
 
 /* ------------------------------------------------------------------ */
 /* Dados dos 12 Planos Oficiais do GymClub                            */
@@ -854,12 +856,39 @@ export default function LPUsuario() {
               </p>
             </div>
 
-            {/* QR Code Ilustrativo Estilizado */}
-            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 flex flex-col items-center justify-center mb-6">
-              <div className="w-40 h-40 bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex items-center justify-center">
-                <QrCode className="w-32 h-32 text-gray-900" />
+            {/* QR Codes oficiais — um por loja */}
+            <div className="bg-gray-50 p-5 sm:p-6 rounded-2xl border border-gray-200 mb-6">
+              <div className="grid grid-cols-2 gap-4 sm:gap-5">
+                <div className="flex flex-col items-center">
+                  <div className="w-full max-w-[158px] bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                    <img
+                      src={qrAppStore}
+                      alt="QR Code para baixar o app GymClub na App Store"
+                      className="w-full h-auto block"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span className="text-[11px] font-title font-bold text-gray-700 mt-2.5">
+                    App Store
+                  </span>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <div className="w-full max-w-[158px] bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                    <img
+                      src={qrGooglePlay}
+                      alt="QR Code para baixar o app GymClub no Google Play"
+                      className="w-full h-auto block"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span className="text-[11px] font-title font-bold text-gray-700 mt-2.5">
+                    Google Play
+                  </span>
+                </div>
               </div>
-              <p className="text-[11px] font-title font-medium text-gray-500 mt-3 text-center">
+
+              <p className="text-[11px] font-title font-medium text-gray-500 mt-4 text-center">
                 Aponte a câmera do smartphone para abrir na sua loja
               </p>
             </div>

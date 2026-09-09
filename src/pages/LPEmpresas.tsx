@@ -837,8 +837,7 @@ export default function LPEmpresas() {
                 <div className="bg-white rounded-3xl p-8 md:p-10 shadow-2xl">
 
                   <h3 className="text-lg sm:text-2xl md:text-3xl font-title font-black text-gray-900 mb-6 uppercase text-center tracking-tight">
-                    CADASTRE SUA EMPRESA
-                  </h3>
+                                      </h3>
 
                   <form
                     className="space-y-4"

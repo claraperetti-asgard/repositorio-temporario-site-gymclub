@@ -26,6 +26,8 @@ import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { PhoneMockup } from '../components/PhoneMockup';
 import fundoHome from '../assets/fundo-home.jpeg';
+import qrAppStore from '../assets/qrcode-appstore.png';
+import qrGooglePlay from '../assets/qrcode-googleplay.png';
 
 /* ========================================================================== */
 /* DADOS & ASSETS DOS PLANOS (CLUBE 1 AO 12)                                  */
@@ -915,6 +917,42 @@ export default function LPHome() {
                       </div>
                     </a>
                   </div>
+
+                  {/* QR Codes: so fazem sentido em telas grandes, onde o
+                      visitante escaneia com o celular em vez de tocar no link. */}
+                  <div className="hidden lg:flex items-center gap-5 mt-8">
+                    <div className="flex flex-col items-center">
+                      <div className="w-[132px] bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm">
+                        <img
+                          src={qrAppStore}
+                          alt="QR Code para baixar o app GymClub na App Store"
+                          className="w-full h-auto block"
+                          loading="lazy"
+                        />
+                      </div>
+                      <span className="text-[10px] font-title font-bold text-gray-600 mt-2">
+                        App Store
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      <div className="w-[132px] bg-white p-2.5 rounded-xl border border-gray-200 shadow-sm">
+                        <img
+                          src={qrGooglePlay}
+                          alt="QR Code para baixar o app GymClub no Google Play"
+                          className="w-full h-auto block"
+                          loading="lazy"
+                        />
+                      </div>
+                      <span className="text-[10px] font-title font-bold text-gray-600 mt-2">
+                        Google Play
+                      </span>
+                    </div>
+
+                    <p className="text-xs font-title font-light text-gray-600 max-w-[190px] leading-relaxed">
+                      Aponte a câmera do celular e baixe direto na sua loja.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="lg:col-span-5 flex justify-center py-4 lg:py-0">
@@ -1187,7 +1225,7 @@ export default function LPHome() {
               <div className="w-full lg:w-[580px] lg:shrink-0">
                 <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-white/50">
                   <h3 className="text-xl sm:text-2xl md:text-3xl font-title font-black text-gray-900 mb-6 uppercase text-center tracking-tight">
-                    {leadTypeForm === 'company' ? 'CADASTRE SUA EMPRESA' : 'CADASTRE SUA ACADEMIA'}
+                    {leadTypeForm === 'company' ? 'FAÇA SEU CADASTRO' : 'FAÇA SEU CADASTRO'}
                   </h3>
 
                   <div className="flex p-1 bg-gray-100 rounded-2xl mb-6">
@@ -1306,17 +1344,7 @@ export default function LPHome() {
                         />
                       </div>
 
-                      <div>
-                        <input
-                          type="text"
-                          required
-                          inputMode="numeric"
-                          value={cnpj}
-                          onChange={(e) => setCnpj(formatCnpj(e.target.value))}
-                          placeholder="CNPJ (00.000.000/0000-00)"
-                          className={inputClass}
-                        />
-                      </div>
+                      
 
                       <div className="pt-2">
                         <button
