@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
+  Upload,
   Check,
   CheckCircle2,
   ChevronDown, Minus, Plus,
@@ -30,6 +31,9 @@ const logoMark = '/assets/logo-mark.png';
 import bgEmpresa from '../assets/bg-empresa.png';
 import fundoAcademias from '../assets/fundo-academias.jpeg';
 import bgPraQuem from '../assets/bg-praquem.png';
+import nivel1 from '../assets/nivel-1.svg';
+import nivel2 from '../assets/nivel-2.svg';
+import nivel3 from '../assets/nivel-3.svg';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 
@@ -37,26 +41,33 @@ import { Footer } from '../components/Footer';
 /* Planos da plataforma (Clube 1 a Clube 12)                           */
 /* ------------------------------------------------------------------ */
 
+// A trilha do carrossel renderiza tres copias da lista. O scroll fica sempre na
+// copia do meio; ao encostar nas pontas reposicionamos para o card equivalente do
+// centro. Como o conteudo e identico, o salto e invisivel e a navegacao nao tem fim.
+const COPIAS_CARROSSEL = 3;
+
 interface PlanItem {
   id: number;
   name: string;
   price: number;
   priceFormatted: string;
+  hex: string;
+  face: string;
 }
 
 const PLATFORM_PLANS: PlanItem[] = [
-  { id: 1, name: 'Clube 1', price: 39.9, priceFormatted: 'R$ 39,90' },
-  { id: 2, name: 'Clube 2', price: 69.9, priceFormatted: 'R$ 69,90' },
-  { id: 3, name: 'Clube 3', price: 99.9, priceFormatted: 'R$ 99,90' },
-  { id: 4, name: 'Clube 4', price: 139.9, priceFormatted: 'R$ 139,90' },
-  { id: 5, name: 'Clube 5', price: 169.9, priceFormatted: 'R$ 169,90' },
-  { id: 6, name: 'Clube 6', price: 199.9, priceFormatted: 'R$ 199,90' },
-  { id: 7, name: 'Clube 7', price: 249.9, priceFormatted: 'R$ 249,90' },
-  { id: 8, name: 'Clube 8', price: 309.9, priceFormatted: 'R$ 309,90' },
-  { id: 9, name: 'Clube 9', price: 419.9, priceFormatted: 'R$ 419,90' },
-  { id: 10, name: 'Clube 10', price: 549.9, priceFormatted: 'R$ 549,90' },
-  { id: 11, name: 'Clube 11', price: 649.9, priceFormatted: 'R$ 649,90' },
-  { id: 12, name: 'Clube 12', price: 799.9, priceFormatted: 'R$ 799,90' },
+  { id: 1, name: 'Clube 1', price: 39.9, priceFormatted: 'R$ 39,90', hex: '#ff883f', face: nivel1 },
+  { id: 2, name: 'Clube 2', price: 69.9, priceFormatted: 'R$ 69,90', hex: '#ff883f', face: nivel1 },
+  { id: 3, name: 'Clube 3', price: 99.9, priceFormatted: 'R$ 99,90', hex: '#ff9d3a', face: nivel1 },
+  { id: 4, name: 'Clube 4', price: 139.9, priceFormatted: 'R$ 139,90', hex: '#ffb336', face: nivel1 },
+  { id: 5, name: 'Clube 5', price: 169.9, priceFormatted: 'R$ 169,90', hex: '#f7e92a', face: nivel2 },
+  { id: 6, name: 'Clube 6', price: 199.9, priceFormatted: 'R$ 199,90', hex: '#f7e92a', face: nivel2 },
+  { id: 7, name: 'Clube 7', price: 249.9, priceFormatted: 'R$ 249,90', hex: '#e8ec2b', face: nivel2 },
+  { id: 8, name: 'Clube 8', price: 309.9, priceFormatted: 'R$ 309,90', hex: '#d9f032', face: nivel2 },
+  { id: 9, name: 'Clube 9', price: 419.9, priceFormatted: 'R$ 419,90', hex: '#c2f463', face: nivel3 },
+  { id: 10, name: 'Clube 10', price: 549.9, priceFormatted: 'R$ 549,90', hex: '#c2f463', face: nivel3 },
+  { id: 11, name: 'Clube 11', price: 649.9, priceFormatted: 'R$ 649,90', hex: '#b3f253', face: nivel3 },
+  { id: 12, name: 'Clube 12', price: 799.9, priceFormatted: 'R$ 799,90', hex: '#a1f042', face: nivel3 },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -143,6 +154,40 @@ function cnpjValido(valor: string) {
   );
 }
 
+function formatarCep(valor: string) {
+  const d = valor.replace(/\D/g, '').slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+}
+
+function formatarCpf(valor: string) {
+  const d = valor.replace(/\D/g, '').slice(0, 11);
+  return d
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+}
+
+
+// Os seis espacos de imagem do ultimo passo do cadastro.
+const SLOTS_FOTO = [
+  { id: 'principal', rotulo: 'Foto principal', obrigatoria: true },
+  { id: 'logo', rotulo: 'Logo', obrigatoria: true },
+  { id: 'fachada', rotulo: 'Fachada', obrigatoria: false },
+  { id: 'galeria1', rotulo: 'Galeria 1', obrigatoria: false },
+  { id: 'galeria2', rotulo: 'Galeria 2', obrigatoria: false },
+  { id: 'galeria3', rotulo: 'Galeria 3', obrigatoria: false },
+] as const;
+
+const HORARIOS_PADRAO = [
+  { dia: 'Seg', fechado: false, abre: '06:30', fecha: '21:30' },
+  { dia: 'Ter', fechado: false, abre: '06:30', fecha: '21:30' },
+  { dia: 'Qua', fechado: false, abre: '06:30', fecha: '21:30' },
+  { dia: 'Qui', fechado: false, abre: '06:30', fecha: '21:30' },
+  { dia: 'Sex', fechado: false, abre: '06:30', fecha: '21:30' },
+  { dia: 'Sáb', fechado: false, abre: '08:00', fecha: '14:00' },
+  { dia: 'Dom', fechado: false, abre: '08:00', fecha: '12:00' },
+];
+
 const emailValido = (valor: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor.trim());
 
@@ -189,7 +234,18 @@ const FAQ_ITEMS = [
 
 export default function LPAcademias() {
   // Planos da plataforma: Default para Clube 6 (R$ 199,90)
-  const [selectedPlanIndex, setSelectedPlanIndex] = useState<number>(5);
+  const TOTAL_PLANS = PLATFORM_PLANS.length;
+  const LOOPED_PLANS = useMemo(
+    () => Array.from({ length: COPIAS_CARROSSEL }).flatMap(() => PLATFORM_PLANS),
+    [],
+  );
+
+  // Posicao dentro da trilha triplicada; comeca no Clube 6 da copia central.
+  const [trackPos, setTrackPos] = useState<number>(TOTAL_PLANS + 5);
+  const selectedPlanIndex = ((trackPos % TOTAL_PLANS) + TOTAL_PLANS) % TOTAL_PLANS;
+
+  // O primeiro posicionamento e o reposicionamento do loop acontecem sem animacao.
+  const semAnimacaoRef = useRef(true);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const selectedPlan = PLATFORM_PLANS[selectedPlanIndex] || PLATFORM_PLANS[5];
@@ -213,30 +269,51 @@ export default function LPAcademias() {
   });
 
   // Carousel navigation
-  const handlePrevPlan = () => {
-    setSelectedPlanIndex((prev) => (prev > 0 ? prev - 1 : PLATFORM_PLANS.length - 1));
-  };
+  const handlePrevPlan = () => setTrackPos((p) => p - 1);
+  const handleNextPlan = () => setTrackPos((p) => p + 1);
 
-  const handleNextPlan = () => {
-    setSelectedPlanIndex((prev) => (prev < PLATFORM_PLANS.length - 1 ? prev + 1 : 0));
-  };
-
-  // Scroll active plan into view smoothly inside the carousel
+  // Centraliza o plano ativo e mantem o carrossel em loop infinito.
   useEffect(() => {
-    if (carouselRef.current) {
-      const activeCard = carouselRef.current.children[selectedPlanIndex] as HTMLElement;
-      if (activeCard) {
-        const container = carouselRef.current;
-        // Centraliza pelo centro real dos elementos: offsetLeft seria medido a partir
-        // do wrapper posicionado (que tem padding lateral), deslocando o card.
-        const containerRect = container.getBoundingClientRect();
-        const cardRect = activeCard.getBoundingClientRect();
-        const delta =
-          cardRect.left + cardRect.width / 2 - (containerRect.left + containerRect.width / 2);
-        container.scrollTo({ left: container.scrollLeft + delta, behavior: 'smooth' });
-      }
+    const container = carouselRef.current;
+    if (!container) return;
+
+    const activeCard = container.children[trackPos] as HTMLElement | undefined;
+    if (!activeCard) return;
+
+    // Centraliza pelo centro real dos elementos: offsetLeft seria medido a partir
+    // do wrapper posicionado (que tem padding lateral), deslocando o card.
+    const containerRect = container.getBoundingClientRect();
+    const cardRect = activeCard.getBoundingClientRect();
+    const delta =
+      cardRect.left + cardRect.width / 2 - (containerRect.left + containerRect.width / 2);
+
+    const semAnimacao = semAnimacaoRef.current;
+    semAnimacaoRef.current = false;
+
+    if (semAnimacao) {
+      // A trilha tem scroll-behavior: smooth no CSS, que venceria o scrollTo.
+      // Desligar na marra e a unica forma de garantir um salto instantaneo.
+      const anterior = container.style.scrollBehavior;
+      container.style.scrollBehavior = 'auto';
+      container.scrollLeft += delta;
+      container.style.scrollBehavior = anterior;
+    } else {
+      container.scrollTo({ left: container.scrollLeft + delta, behavior: 'smooth' });
     }
-  }, [selectedPlanIndex]);
+
+    // Saiu da copia central: depois que a animacao termina, volta para o card
+    // equivalente do meio. O conteudo e identico, entao nada muda na tela.
+    if (trackPos < TOTAL_PLANS || trackPos >= TOTAL_PLANS * 2) {
+      const timer = setTimeout(
+        () => {
+          semAnimacaoRef.current = true;
+          setTrackPos(selectedPlanIndex + TOTAL_PLANS);
+        },
+        semAnimacao ? 0 : 450,
+      );
+      return () => clearTimeout(timer);
+    }
+  }, [trackPos, selectedPlanIndex, TOTAL_PLANS]);
 
   // Modal de Cadastro de Academia (conforme print 3)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -250,52 +327,89 @@ export default function LPAcademias() {
 
   const [cnpj, setCnpj] = useState('');
   const [razaoSocial, setRazaoSocial] = useState('');
-  const [numUnidades, setNumUnidades] = useState('1');
+  // Passo 2
+  const [temMaisUnidades, setTemMaisUnidades] = useState(false);
+  const [unidadesAdicionais, setUnidadesAdicionais] = useState('');
+
+  // Passo 3 (endereco)
+  const [cep, setCep] = useState('');
+  const [numero, setNumero] = useState('');
+  const [rua, setRua] = useState('');
+  const [complemento, setComplemento] = useState('');
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  // Passo 4
+  const [nomeFantasia, setNomeFantasia] = useState('');
+
+  // Passo 5 (responsavel legal)
+  const [respNome, setRespNome] = useState('');
+  const [respCpf, setRespCpf] = useState('');
+  const [respEmail, setRespEmail] = useState('');
+  const [respCelular, setRespCelular] = useState('');
+
+  // Passo 6
+  const [descricaoUnidade, setDescricaoUnidade] = useState('');
+  const [horarios, setHorarios] = useState(HORARIOS_PADRAO);
+
+  // Passo 7
+  const [fotos, setFotos] = useState<Record<string, File | null>>({});
+  const [aceiteTermo, setAceiteTermo] = useState(false);
 
   const [uf, setUf] = useState('');
   const [cidade, setCidade] = useState('');
   const [bairro, setBairro] = useState('');
 
-  const [modalidades, setModalidades] = useState<string[]>([
-    'Musculação',
-    'Funcional',
-  ]);
-  const [comodidades, setComodidades] = useState<string[]>([
-    'Ar-condicionado',
-    'Vestiário com chuveiro',
-  ]);
-  const [faixaMensalidade, setFaixaMensalidade] = useState('R$ 100 a R$ 179/mês');
 
   const [erroEtapa, setErroEtapa] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [enviadoComSucesso, setEnviadoComSucesso] = useState(false);
 
-  // IBGE Cidades
-  const [cidades, setCidades] = useState<string[]>([]);
-  const [carregandoCidades, setCarregandoCidades] = useState(false);
+  // Busca o endereco no ViaCEP assim que o CEP fica completo. Se a consulta
+  // falhar, os campos seguem editaveis a mao — nunca travamos o cadastro.
+  const handleCepChange = (valor: string) => {
+    const formatado = formatarCep(valor);
+    setCep(formatado);
 
-  useEffect(() => {
-    if (!uf) {
-      setCidades([]);
-      setCidade('');
-      return;
-    }
-    setCarregandoCidades(true);
-    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`)
+    const digitos = formatado.replace(/\D/g, '');
+    if (digitos.length !== 8) return;
+
+    setBuscandoCep(true);
+    fetch(`https://viacep.com.br/ws/${digitos}/json/`)
       .then((res) => res.json())
       .then((dados) => {
-        if (Array.isArray(dados)) {
-          const lista = dados.map((d: { nome: string }) => d.nome).sort();
-          setCidades(lista);
+        if (dados && !dados.erro) {
+          setRua(dados.logradouro || '');
+          setBairro(dados.bairro || '');
+          setCidade(dados.localidade || '');
+          setUf(dados.uf || '');
         }
       })
-      .catch(() => {
-        setCidades([]);
-      })
-      .finally(() => {
-        setCarregandoCidades(false);
-      });
-  }, [uf]);
+      .catch(() => {})
+      .finally(() => setBuscandoCep(false));
+  };
+
+  const atualizarHorario = (
+    idx: number,
+    campo: 'fechado' | 'abre' | 'fecha',
+    valor: boolean | string,
+  ) => {
+    setHorarios((prev) =>
+      prev.map((h, i) => (i === idx ? { ...h, [campo]: valor } : h)),
+    );
+  };
+
+  const aplicarSegundaNosDemais = () => {
+    setHorarios((prev) => {
+      const seg = prev[0];
+      return prev.map((h, i) =>
+        i === 0 ? h : { ...h, fechado: seg.fechado, abre: seg.abre, fecha: seg.fecha },
+      );
+    });
+  };
+
+  const definirFoto = (id: string, arquivo: File | null) => {
+    setFotos((prev) => ({ ...prev, [id]: arquivo }));
+  };
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -338,17 +452,69 @@ export default function LPAcademias() {
         return false;
       }
     } else if (etapa === 2) {
-      if (cnpj.trim() && !cnpjValido(cnpj)) {
-        setErroEtapa('CNPJ inválido — verifique os números digitados.');
+      if (temMaisUnidades && Number(unidadesAdicionais) < 1) {
+        setErroEtapa('Informe quantas unidades adicionais sua rede tem.');
         return false;
       }
     } else if (etapa === 3) {
+      if (cep.replace(/\D/g, '').length !== 8) {
+        setErroEtapa('Informe um CEP válido com 8 dígitos.');
+        return false;
+      }
+      if (!numero.trim()) {
+        setErroEtapa('Informe o número do endereço.');
+        return false;
+      }
+      if (!cidade.trim()) {
+        setErroEtapa('Informe a cidade.');
+        return false;
+      }
       if (!uf) {
         setErroEtapa('Selecione o estado (UF) da sua academia.');
         return false;
       }
-      if (!cidade.trim()) {
-        setErroEtapa('Selecione ou informe a cidade.');
+    } else if (etapa === 4) {
+      if (!razaoSocial.trim()) {
+        setErroEtapa('Informe a razão social da empresa.');
+        return false;
+      }
+      if (!cnpjValido(cnpj)) {
+        setErroEtapa('CNPJ inválido — verifique os números digitados.');
+        return false;
+      }
+      if (!nomeFantasia.trim()) {
+        setErroEtapa('Informe o nome fantasia da academia.');
+        return false;
+      }
+    } else if (etapa === 5) {
+      if (!respNome.trim()) {
+        setErroEtapa('Informe o nome do responsável legal.');
+        return false;
+      }
+      if (respCpf.replace(/\D/g, '').length !== 11) {
+        setErroEtapa('Informe um CPF válido com 11 dígitos.');
+        return false;
+      }
+      if (!emailValido(respEmail)) {
+        setErroEtapa('Informe um e-mail válido para o responsável.');
+        return false;
+      }
+    } else if (etapa === 6) {
+      if (!descricaoUnidade.trim()) {
+        setErroEtapa('Escreva uma breve descrição da unidade.');
+        return false;
+      }
+      if (horarios.every((h) => h.fechado)) {
+        setErroEtapa('Defina o horário de funcionamento de pelo menos um dia.');
+        return false;
+      }
+    } else if (etapa === 7) {
+      if (!fotos.principal || !fotos.logo) {
+        setErroEtapa('Envie a foto principal e o logo da academia.');
+        return false;
+      }
+      if (!aceiteTermo) {
+        setErroEtapa('É preciso confirmar as informações para enviar o cadastro.');
         return false;
       }
     }
@@ -382,15 +548,34 @@ export default function LPAcademias() {
       telefone,
       email,
       nomeAcademia,
-      cnpj,
-      razaoSocial,
-      numUnidades,
-      uf,
-      cidade,
+      temMaisUnidades,
+      unidadesAdicionais: temMaisUnidades ? unidadesAdicionais : "0",
+      cep,
+      rua,
+      numero,
+      complemento,
       bairro,
-      modalidades: modalidades.join(', '),
-      comodidades: comodidades.join(', '),
-      faixaMensalidade,
+      cidade,
+      uf,
+      razaoSocial,
+      cnpj,
+      nomeFantasia,
+      responsavel: {
+        nome: respNome,
+        cpf: respCpf,
+        email: respEmail,
+        celular: respCelular,
+      },
+      descricaoUnidade,
+      horarios: horarios.map((h) =>
+        h.fechado ? `${h.dia}: fechado` : `${h.dia}: ${h.abre} às ${h.fecha}`,
+      ).join(' | '),
+      // Os arquivos em si nao vao no JSON; enviamos os nomes para o time
+      // saber o que foi anexado no formulario.
+      fotosEnviadas: SLOTS_FOTO.filter((s) => fotos[s.id])
+        .map((s) => `${s.rotulo}: ${fotos[s.id]?.name}`)
+        .join(' | '),
+      aceiteTermo,
       planoReferencia: `${selectedPlan.name} (${selectedPlan.priceFormatted})`,
       dataCadastro: new Date().toISOString(),
     };
@@ -413,17 +598,21 @@ export default function LPAcademias() {
     }
   };
 
-  const toggleModalidade = (item: string) => {
-    setModalidades((prev) =>
-      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
-    );
-  };
 
-  const toggleComodidade = (item: string) => {
-    setComodidades((prev) =>
-      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
-    );
-  };
+  // Faixa verde com o plano escolhido, repetida em todas as etapas.
+  const boxPlanoEscolhido = (
+    <div className="rounded-2xl p-3.5 sm:p-4 bg-[#f4fde8] border border-[#d8f5b8] text-xs sm:text-sm font-title text-gray-800 flex items-center justify-between">
+      <span>
+        Plano escolhido:{' '}
+        <strong className="text-gray-950 font-bold">
+          {selectedPlan.name} · {selectedPlan.priceFormatted}
+        </strong>
+      </span>
+      <span className="text-[11px] text-gym-orange font-bold uppercase">
+        Até R$ {valorRepasseFormatado}
+      </span>
+    </div>
+  );
 
   // Porcentagem calculada para os 7 passos
   const porcentagemConcluida = Math.round((etapa / 7) * 100);
@@ -535,38 +724,66 @@ export default function LPAcademias() {
                 className="flex items-center gap-3 sm:gap-4 overflow-x-auto py-6 px-2 scroll-smooth no-scrollbar"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                {PLATFORM_PLANS.map((plan, idx) => {
-                  const isSelected = idx === selectedPlanIndex;
+                {LOOPED_PLANS.map((plan, idx) => {
+                  const isSelected = idx === trackPos;
                   return (
                     <div
-                      key={plan.id}
-                      onClick={() => setSelectedPlanIndex(idx)}
-                      className={`relative shrink-0 w-36 sm:w-44 p-4 sm:p-5 rounded-3xl cursor-pointer transition-all duration-300 text-center ${
-                        isSelected
-                          ? 'bg-gradient-to-b from-white to-orange-50/50 border-2 border-gym-orange shadow-2xl scale-105 sm:scale-110 z-10 ring-4 ring-orange-200'
-                          : 'bg-white border border-gray-200 opacity-80 hover:opacity-100 hover:border-orange-200 hover:bg-orange-50/20 transition-all shadow-sm'
+                      key={`${plan.id}-${idx}`}
+                      onClick={() => setTrackPos(idx)}
+                      className={`relative shrink-0 w-[228px] sm:w-[240px] cursor-pointer transition-all duration-300 ${
+                        isSelected ? 'scale-105 z-10' : ''
                       }`}
                     >
                       {/* Badge ESCOLHIDO no gradiente GymClub */}
                       {isSelected && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-yellow-orange text-gray-950 text-[10px] sm:text-xs font-title font-black px-3 py-0.5 rounded-full shadow-md uppercase tracking-wider whitespace-nowrap">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 bg-gradient-yellow-orange text-gray-950 text-[10px] sm:text-xs font-title font-black px-3 py-0.5 rounded-full shadow-md uppercase tracking-wider whitespace-nowrap">
                           SELECIONADO
                         </div>
                       )}
-                      <p
-                        className={`text-xs sm:text-sm font-title font-bold mb-1 ${
-                          isSelected ? 'text-gym-orange' : 'text-gray-500'
+
+                      <article
+                        className={`group relative min-h-[172px] overflow-hidden rounded-[28px] p-5 text-left transition-all duration-300 ${
+                          isSelected
+                            ? 'bg-white border-2 border-gym-orange shadow-2xl shadow-orange-200/60 ring-4 ring-orange-200'
+                            : 'bg-white border border-gray-200/90 opacity-90 hover:opacity-100 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-gray-200/80 hover:border-gray-300'
                         }`}
                       >
-                        {plan.name}
-                      </p>
-                      <p
-                        className={`text-base sm:text-xl font-title font-extrabold ${
-                          isSelected ? 'text-gray-900' : 'text-gray-800'
-                        }`}
-                      >
-                        {plan.priceFormatted}
-                      </p>
+                        <div className="relative z-10 flex h-full flex-col pr-9">
+                          <h4 className="font-title text-lg sm:text-xl font-bold uppercase leading-tight tracking-tight text-gray-900">
+                            {plan.name}
+                          </h4>
+
+                          <p className="mt-3 font-title text-xl sm:text-2xl font-black tracking-tight text-gray-900 whitespace-nowrap">
+                            {plan.priceFormatted}
+                          </p>
+
+                          <p className="mt-1 font-title text-[9px] font-medium uppercase tracking-[0.15em] text-gray-500">
+                            POR MÊS
+                          </p>
+                        </div>
+
+                        {/* Carinha da faixa do plano, igual ao card padrao */}
+                        <div className="pointer-events-none absolute bottom-0 right-0 z-0 flex h-full items-center justify-end">
+                          <div
+                            className={`h-20 w-20 opacity-90 transition-all duration-500 ease-out sm:h-24 sm:w-24 ${
+                              isSelected
+                                ? '-translate-y-2 translate-x-6 scale-[1.3]'
+                                : 'translate-x-3 translate-y-2 sm:translate-x-4 group-hover:-translate-y-2 group-hover:translate-x-6 group-hover:scale-[1.3]'
+                            }`}
+                            style={{
+                              backgroundColor: plan.hex,
+                              maskImage: `url("${plan.face}")`,
+                              WebkitMaskImage: `url("${plan.face}")`,
+                              maskSize: 'contain',
+                              WebkitMaskSize: 'contain',
+                              maskRepeat: 'no-repeat',
+                              WebkitMaskRepeat: 'no-repeat',
+                              maskPosition: 'center',
+                              WebkitMaskPosition: 'center',
+                            }}
+                          />
+                        </div>
+                      </article>
                     </div>
                   );
                 })}
@@ -587,7 +804,17 @@ export default function LPAcademias() {
               {PLATFORM_PLANS.map((_, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setSelectedPlanIndex(idx)}
+                  onClick={() =>
+                    setTrackPos((p) => {
+                      const copias = Array.from(
+                        { length: COPIAS_CARROSSEL },
+                        (_, c) => c * TOTAL_PLANS + idx,
+                      );
+                      return copias.reduce((a, b) =>
+                        Math.abs(b - p) < Math.abs(a - p) ? b : a,
+                      );
+                    })
+                  }
                   aria-label={`Ver plano ${idx + 1}`}
                   className={`h-2 rounded-full transition-all cursor-pointer ${
                     idx === selectedPlanIndex
@@ -1344,318 +1571,456 @@ export default function LPAcademias() {
                       </div>
                     )}
 
-                    {/* ETAPA 2: DADOS DA EMPRESA */}
+                    {/* ETAPA 2: MAIS UNIDADES */}
                     {etapa === 2 && (
                       <div className="space-y-4">
                         <div>
                           <h3 className="text-lg font-title font-bold text-gray-900">
-                            Dados da empresa
+                            Sua academia tem mais unidades?
                           </h3>
                           <p className="text-xs sm:text-sm font-title font-light text-gray-500">
-                            Informações cadastrais para faturamento e repasse.
+                            Cadastre a unidade principal agora.
                           </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
-                          <div>
-                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
-                              CNPJ da Academia
-                            </label>
+                        <div className="rounded-2xl border border-gray-200 p-4">
+                          <label className="flex items-start gap-3 cursor-pointer">
                             <input
-                              type="text"
-                              value={cnpj}
-                              onChange={(e) => setCnpj(formatarCnpj(e.target.value))}
-                              placeholder="00.000.000/0000-00"
-                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400"
+                              type="checkbox"
+                              checked={temMaisUnidades}
+                              onChange={(e) => setTemMaisUnidades(e.target.checked)}
+                              className="mt-0.5 w-4 h-4 accent-gym-orange cursor-pointer shrink-0"
                             />
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
-                              Razão Social / Nome Fantasia
-                            </label>
-                            <input
-                              type="text"
-                              value={razaoSocial}
-                              onChange={(e) => setRazaoSocial(e.target.value)}
-                              placeholder="Razão Social"
-                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-2">
-                            Quantas unidades sua academia possui?
+                            <span>
+                              <span className="block text-sm font-title font-bold text-gray-900">
+                                Tenho mais de uma unidade
+                              </span>
+                              <span className="block text-xs font-title font-light text-gray-500 mt-0.5">
+                                As demais ficam sinalizadas para o time finalizar com você.
+                              </span>
+                            </span>
                           </label>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {['1', '2 a 5', '6 a 15', '+ de 15'].map((qtd) => (
-                              <button
-                                type="button"
-                                key={qtd}
-                                onClick={() => setNumUnidades(qtd)}
-                                className={`py-2.5 px-3 rounded-xl text-xs font-title font-semibold transition-all cursor-pointer border ${
-                                  numUnidades === qtd
-                                    ? 'bg-gym-orange text-white border-gym-orange shadow-xs'
-                                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                                }`}
-                              >
-                                {qtd} {qtd === '1' ? 'unidade' : 'unidades'}
-                              </button>
-                            ))}
-                          </div>
+
+                          {temMaisUnidades && (
+                            <div className="mt-4">
+                              <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                Unidades Adicionais <span className="text-gym-orange">*</span>
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={unidadesAdicionais}
+                                onChange={(e) => setUnidadesAdicionais(e.target.value)}
+                                placeholder="Ex.: 2"
+                                className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                              />
+                            </div>
+                          )}
                         </div>
+
+                        {boxPlanoEscolhido}
                       </div>
                     )}
 
-                    {/* ETAPA 3: LOCALIZAÇÃO */}
+                    {/* ETAPA 3: ENDEREÇO DA UNIDADE */}
                     {etapa === 3 && (
                       <div className="space-y-4">
                         <div>
                           <h3 className="text-lg font-title font-bold text-gray-900">
-                            Onde fica sua academia?
+                            Sobre a sua academia
                           </h3>
                           <p className="text-xs sm:text-sm font-title font-light text-gray-500">
-                            Para que os alunos das empresas da sua região encontrem você no app.
+                            Digite o CEP que a gente preenche o endereço pra você.
                           </p>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
                           <div>
                             <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
-                              Estado (UF) <span className="text-gym-orange">*</span>
+                              CEP <span className="text-gym-orange">*</span>
                             </label>
-                            <select
-                              value={uf}
-                              onChange={(e) => setUf(e.target.value)}
-                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all bg-white"
-                            >
-                              <option value="">Selecione o estado</option>
-                              {UFS.map((item) => (
-                                <option key={item.sigla} value={item.sigla}>
-                                  {item.nome} ({item.sigla})
-                                </option>
-                              ))}
-                            </select>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={cep}
+                              onChange={(e) => handleCepChange(e.target.value)}
+                              placeholder="00000-000"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
+                            <p className="text-[11px] font-title font-light text-gray-400 mt-1">
+                              {buscandoCep ? 'Buscando endereço...' : 'Digite o CEP para preencher o endereço.'}
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                              Número <span className="text-gym-orange">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={numero}
+                              onChange={(e) => setNumero(e.target.value)}
+                              placeholder="Ex.: 1200"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <div>
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                              Rua
+                            </label>
+                            <input
+                              type="text"
+                              value={rua}
+                              onChange={(e) => setRua(e.target.value)}
+                              placeholder="Logradouro"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                              Bairro
+                            </label>
+                            <input
+                              type="text"
+                              value={bairro}
+                              onChange={(e) => setBairro(e.target.value)}
+                              placeholder="Bairro"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <div>
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                              Complemento
+                            </label>
+                            <input
+                              type="text"
+                              value={complemento}
+                              onChange={(e) => setComplemento(e.target.value)}
+                              placeholder="Sala, andar, bloco"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
                           </div>
 
                           <div>
                             <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
                               Cidade <span className="text-gym-orange">*</span>
                             </label>
-                            <select
+                            <input
+                              type="text"
                               value={cidade}
                               onChange={(e) => setCidade(e.target.value)}
-                              disabled={!uf || carregandoCidades}
-                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            >
-                              <option value="">
-                                {!uf
-                                  ? 'Escolha primeiro o estado'
-                                  : carregandoCidades
-                                  ? 'Carregando cidades...'
-                                  : 'Selecione a cidade'}
+                              placeholder="Cidade"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="sm:w-1/2 sm:pr-1.5">
+                          <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                            UF <span className="text-gym-orange">*</span>
+                          </label>
+                          <select
+                            value={uf}
+                            onChange={(e) => setUf(e.target.value)}
+                            className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all bg-white cursor-pointer"
+                          >
+                            <option value="">Selecione</option>
+                            {UFS.map((item) => (
+                              <option key={item.sigla} value={item.sigla}>
+                                {item.nome} ({item.sigla})
                               </option>
-                              {cidades.map((cid) => (
-                                <option key={cid} value={cid}>
-                                  {cid}
-                                </option>
-                              ))}
-                            </select>
+                            ))}
+                          </select>
+                        </div>
+
+                        {boxPlanoEscolhido}
+                      </div>
+                    )}
+
+                    {/* ETAPA 4: DADOS DA EMPRESA */}
+                    {etapa === 4 && (
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-title font-bold text-gray-900">
+                            Dados da empresa
+                          </h3>
+                          <p className="text-xs sm:text-sm font-title font-light text-gray-500">
+                            Precisamos para emitir os repasses corretamente na conta da sua academia.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                          <div>
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                              Razão Social <span className="text-gym-orange">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={razaoSocial}
+                              onChange={(e) => setRazaoSocial(e.target.value)}
+                              placeholder="Nome empresarial"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                              CNPJ <span className="text-gym-orange">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={cnpj}
+                              onChange={(e) => setCnpj(formatarCnpj(e.target.value))}
+                              placeholder="00.000.000/0000-00"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
                           </div>
                         </div>
 
                         <div>
                           <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
-                            Bairro ou Região da Unidade
+                            Nome Fantasia <span className="text-gym-orange">*</span>
                           </label>
                           <input
                             type="text"
-                            value={bairro}
-                            onChange={(e) => setBairro(e.target.value)}
-                            placeholder="Ex: Centro, Jardins, Boa Viagem..."
-                            className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400"
+                            value={nomeFantasia}
+                            onChange={(e) => setNomeFantasia(e.target.value)}
+                            placeholder="Como a academia aparece no app"
+                            className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
                           />
                         </div>
+
+                        {boxPlanoEscolhido}
                       </div>
                     )}
 
-                    {/* ETAPA 4: MODALIDADES */}
-                    {etapa === 4 && (
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="text-lg font-title font-bold text-gray-900">
-                            Modalidades oferecidas
-                          </h3>
-                          <p className="text-xs sm:text-sm font-title font-light text-gray-500">
-                            Selecione as atividades disponíveis no seu espaço.
-                          </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          {[
-                            'Musculação',
-                            'Funcional',
-                            'Crossfit',
-                            'Natação',
-                            'Pilates',
-                            'Lutas / Artes Marciais',
-                            'Dança / Ritmos',
-                            'Yoga',
-                            'Spinning',
-                            'Ginástica',
-                            'Outras',
-                          ].map((item) => {
-                            const isChecked = modalidades.includes(item);
-                            return (
-                              <button
-                                type="button"
-                                key={item}
-                                onClick={() => toggleModalidade(item)}
-                                className={`px-3.5 py-2 rounded-xl text-xs font-title font-medium transition-all cursor-pointer border ${
-                                  isChecked
-                                    ? 'bg-gym-orange text-white border-gym-orange shadow-xs'
-                                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                                }`}
-                              >
-                                {isChecked ? '✓ ' : '+ '} {item}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ETAPA 5: COMODIDADES */}
+                    {/* ETAPA 5: RESPONSÁVEL LEGAL */}
                     {etapa === 5 && (
                       <div className="space-y-4">
                         <div>
                           <h3 className="text-lg font-title font-bold text-gray-900">
-                            Estrutura e comodidades
+                            Responsável legal pelo contrato
                           </h3>
                           <p className="text-xs sm:text-sm font-title font-light text-gray-500">
-                            Destaques que aumentam a preferência dos alunos pelo seu espaço.
+                            Essa pessoa recebe o contrato por e-mail e faz a assinatura digital.
                           </p>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          {[
-                            'Estacionamento',
-                            'Vestiário com chuveiro',
-                            'Ar-condicionado',
-                            'Armários rotativos',
-                            'Acessibilidade PCD',
-                            'Wi-Fi liberado',
-                            'Lanchonete / Suplementos',
-                          ].map((item) => {
-                            const isChecked = comodidades.includes(item);
-                            return (
-                              <button
-                                type="button"
-                                key={item}
-                                onClick={() => toggleComodidade(item)}
-                                className={`px-3.5 py-2 rounded-xl text-xs font-title font-medium transition-all cursor-pointer border ${
-                                  isChecked
-                                    ? 'bg-gym-orange text-white border-gym-orange shadow-xs'
-                                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                                }`}
-                              >
-                                {isChecked ? '✓ ' : '+ '} {item}
-                              </button>
-                            );
-                          })}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                          <div>
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                              Nome Completo <span className="text-gym-orange">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={respNome}
+                              onChange={(e) => setRespNome(e.target.value)}
+                              placeholder="Nome do responsável"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                              CPF <span className="text-gym-orange">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={respCpf}
+                              onChange={(e) => setRespCpf(formatarCpf(e.target.value))}
+                              placeholder="000.000.000-00"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
+                          </div>
                         </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <div>
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                              E-mail do Responsável <span className="text-gym-orange">*</span>
+                            </label>
+                            <input
+                              type="email"
+                              value={respEmail}
+                              onChange={(e) => setRespEmail(e.target.value)}
+                              placeholder="responsavel@academia.com.br"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                              Celular
+                            </label>
+                            <input
+                              type="tel"
+                              value={respCelular}
+                              onChange={(e) => setRespCelular(formatarTelefone(e.target.value))}
+                              placeholder="(00) 00000-0000"
+                              className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light"
+                            />
+                          </div>
+                        </div>
+
+                        {boxPlanoEscolhido}
                       </div>
                     )}
 
-                    {/* ETAPA 6: FAIXA DE MENSALIDADE DE BALCÃO */}
+                    {/* ETAPA 6: DETALHES E HORÁRIOS DA UNIDADE */}
                     {etapa === 6 && (
                       <div className="space-y-4">
                         <div>
                           <h3 className="text-lg font-title font-bold text-gray-900">
-                            Faixa de mensalidade de balcão
+                            Detalhes da unidade
                           </h3>
                           <p className="text-xs sm:text-sm font-title font-light text-gray-500">
-                            Qual a média da sua mensalidade particular hoje? Isso ajuda a posicionar sua academia no plano correto.
+                            Conte um pouco sobre o espaço e defina seus horários de funcionamento.
                           </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                          {[
-                            'Até R$ 99/mês',
-                            'R$ 100 a R$ 179/mês',
-                            'R$ 180 a R$ 279/mês',
-                            'Acima de R$ 280/mês',
-                          ].map((faixa) => (
+                        <div className="pt-2">
+                          <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider mb-1">
+                            Descrição da Unidade <span className="text-gym-orange">*</span>
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={descricaoUnidade}
+                            onChange={(e) => setDescricaoUnidade(e.target.value)}
+                            placeholder="Ex.: Musculação, funcional e aulas coletivas com equipe pronta para receber alunos GymClub."
+                            className="w-full px-3.5 py-3 rounded-xl border border-gray-200 text-sm font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all placeholder:text-gray-400 placeholder:font-light resize-y"
+                          />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="block text-[11px] font-title font-bold text-gray-700 uppercase tracking-wider">
+                              Horários de Funcionamento <span className="text-gym-orange">*</span>
+                            </label>
                             <button
                               type="button"
-                              key={faixa}
-                              onClick={() => setFaixaMensalidade(faixa)}
-                              className={`p-4 rounded-2xl border text-left font-title transition-all cursor-pointer ${
-                                faixaMensalidade === faixa
-                                  ? 'bg-orange-50 border-gym-orange shadow-xs ring-2 ring-gym-orange/30'
-                                  : 'bg-white border-gray-200 hover:bg-gray-50'
-                              }`}
+                              onClick={aplicarSegundaNosDemais}
+                              className="text-[11px] font-title font-bold text-gym-orange hover:underline cursor-pointer"
                             >
-                              <p className="text-sm font-bold text-gray-900">{faixa}</p>
-                              <p className="text-xs text-gray-500 font-light mt-0.5">
-                                Mensalidade particular
-                              </p>
+                              Aplicar segunda nos demais dias
                             </button>
-                          ))}
+                          </div>
+
+                          <div className="space-y-2">
+                            {horarios.map((h, idx) => (
+                              <div
+                                key={h.dia}
+                                className="flex items-center gap-2 sm:gap-3 rounded-xl border border-gray-200 px-3 py-2"
+                              >
+                                <span className="w-9 shrink-0 text-xs font-title font-bold text-gray-900">
+                                  {h.dia}
+                                </span>
+
+                                <label className="flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={h.fechado}
+                                    onChange={(e) => atualizarHorario(idx, 'fechado', e.target.checked)}
+                                    className="w-3.5 h-3.5 accent-gym-orange cursor-pointer"
+                                  />
+                                  <span className="text-[11px] font-title font-light text-gray-600">
+                                    Fechado
+                                  </span>
+                                </label>
+
+                                <input
+                                  type="time"
+                                  value={h.abre}
+                                  disabled={h.fechado}
+                                  onChange={(e) => atualizarHorario(idx, 'abre', e.target.value)}
+                                  className="flex-1 min-w-0 px-2 py-1.5 rounded-lg border border-gray-200 text-xs font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                                />
+                                <span className="text-[11px] font-title font-light text-gray-400 shrink-0">
+                                  às
+                                </span>
+                                <input
+                                  type="time"
+                                  value={h.fecha}
+                                  disabled={h.fechado}
+                                  onChange={(e) => atualizarHorario(idx, 'fecha', e.target.value)}
+                                  className="flex-1 min-w-0 px-2 py-1.5 rounded-lg border border-gray-200 text-xs font-title focus:outline-none focus:border-gym-orange focus:ring-1 focus:ring-gym-orange transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                                />
+                              </div>
+                            ))}
+                          </div>
                         </div>
+
+                        {boxPlanoEscolhido}
                       </div>
                     )}
 
-                    {/* ETAPA 7: REVISÃO E CONCLUSÃO */}
+                    {/* ETAPA 7: FOTOS E ACEITE */}
                     {etapa === 7 && (
                       <div className="space-y-4">
                         <div>
                           <h3 className="text-lg font-title font-bold text-gray-900">
-                            Quase tudo pronto!
+                            Fotos da sua academia
                           </h3>
                           <p className="text-xs sm:text-sm font-title font-light text-gray-500">
-                            Confirme suas informações para entrar na rede GymClub.
+                            Envie imagens do espaço para atrair mais alunos no aplicativo.
                           </p>
                         </div>
 
-                        <div className="rounded-2xl bg-gray-50 border border-gray-200 p-4 space-y-2 text-xs sm:text-sm font-title text-gray-700">
-                          <p>
-                            <span className="text-gray-500">Academia:</span>{' '}
-                            <strong className="text-gray-900">{nomeAcademia || 'Não informado'}</strong>
-                          </p>
-                          <p>
-                            <span className="text-gray-500">Responsável:</span>{' '}
-                            <strong className="text-gray-900">{nomeResponsavel}</strong>
-                          </p>
-                          <p>
-                            <span className="text-gray-500">Telefone:</span>{' '}
-                            <strong className="text-gray-900">{telefone}</strong>
-                          </p>
-                          <p>
-                            <span className="text-gray-500">E-mail:</span>{' '}
-                            <strong className="text-gray-900">{email}</strong>
-                          </p>
-                          <p>
-                            <span className="text-gray-500">Local:</span>{' '}
-                            <strong className="text-gray-900">
-                              {cidade ? `${cidade}/${uf}` : 'Não informado'}
-                            </strong>
-                          </p>
-                          <p>
-                            <span className="text-gray-500">Plano de Referência:</span>{' '}
-                            <strong className="text-gym-orange">
-                              {selectedPlan.name} · {selectedPlan.priceFormatted}
-                            </strong>
-                          </p>
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                          {SLOTS_FOTO.map((slot) => (
+                            <div
+                              key={slot.id}
+                              className="rounded-xl border border-gray-200 overflow-hidden"
+                            >
+                              <label className="block bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer px-3 py-6 text-center">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => definirFoto(slot.id, e.target.files?.[0] ?? null)}
+                                  className="hidden"
+                                />
+                                <Upload className="w-4 h-4 text-gray-400 mx-auto mb-1.5" />
+                                <span className="block text-[11px] font-title font-light text-gray-500 truncate">
+                                  {fotos[slot.id]?.name ?? 'Enviar imagem'}
+                                </span>
+                              </label>
+
+                              <div className="flex items-center justify-between gap-2 px-3 py-2 bg-white">
+                                <span className="text-[11px] font-title font-bold text-gray-800 truncate">
+                                  {slot.rotulo}
+                                </span>
+                                {slot.obrigatoria && (
+                                  <span className="text-[10px] font-title font-bold text-gym-orange uppercase shrink-0">
+                                    Obrigatória
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
 
-                        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-start gap-2.5 text-xs font-title text-emerald-900">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                          <span>
-                            Sem taxas de adesão, sem exclusividade e com repasse sustentável de até 85%.
+                        <label className="flex items-start gap-3 rounded-2xl border border-gray-200 p-4 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={aceiteTermo}
+                            onChange={(e) => setAceiteTermo(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 accent-gym-orange cursor-pointer shrink-0"
+                          />
+                          <span className="text-xs font-title font-light text-gray-700 leading-relaxed">
+                            Confirmo que as informações são verdadeiras e aceito seguir com o
+                            contrato de parceria digital da GymClub.
                           </span>
-                        </div>
+                        </label>
+
+                        {boxPlanoEscolhido}
                       </div>
                     )}
 
@@ -1692,7 +2057,7 @@ export default function LPAcademias() {
                         <span>Enviando...</span>
                       ) : etapa === 7 ? (
                         <>
-                          <span>Finalizar cadastro</span>
+                          <span>Enviar cadastro</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
                       ) : (
